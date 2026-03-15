@@ -20,9 +20,7 @@ Comparative analysis of key financial indicators for the major European automoti
 
 ---
 
-## Calculated indicators
-
-## Indicators analysed
+## Financial Indicators
 
 | Indicator | Category | Formula | Meaning |
 |---|---|---|---|

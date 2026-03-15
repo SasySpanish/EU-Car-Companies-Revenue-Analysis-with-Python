@@ -22,33 +22,27 @@ Comparative analysis of key financial indicators for the major European automoti
 
 ## Calculated indicators
 
-### Absolute profitability
-- **Revenue** — Total revenues
-- **Gross Profit** — Revenues minus cost of goods sold
-- **EBIT** — Earnings Before Interest & Taxes (operating income)
-- **EBITDA** — EBIT + Depreciation & Amortisation
-- **Net Income** — Bottom-line profit
+## Indicators analysed
 
-### Margins (%)
-- **Gross Margin** = Gross Profit / Revenue
-- **EBIT Margin** = EBIT / Revenue
-- **EBITDA Margin** = EBITDA / Revenue
-- **Net Margin** = Net Income / Revenue
-
-### Returns (%)
-- **ROE** = Net Income / Equity
-- **ROA** = Net Income / Total Assets
-- **ROI / ROCE** = EBIT / (Total Assets − Current Liabilities)
-
-### Liquidity
-- **Current Ratio** = Current Assets / Current Liabilities
-- **Quick Ratio** = (Current Assets − Inventory) / Current Liabilities
-
-### Financial structure
-- **Debt/Equity** = Total Debt / Equity
-- **Net Debt** = Total Debt − Cash
-- **Interest Coverage** = EBIT / Interest Expense
-
+| Indicator | Category | Formula | Meaning |
+|---|---|---|---|
+| Revenue | Absolute profitability | Total revenues | Total value of goods and services sold |
+| Gross Profit | Absolute profitability | Revenue − Cost of Goods Sold | Profit after production costs |
+| EBIT | Absolute profitability | Operating income | Profit before interest and taxes |
+| EBITDA | Absolute profitability | EBIT + Depreciation & Amortisation | Operating profit before non-cash charges |
+| Net Income | Absolute profitability | Bottom-line profit | Final profit after all expenses |
+| Gross Margin | Margins (%) | Gross Profit / Revenue | Efficiency of production and pricing |
+| EBIT Margin | Margins (%) | EBIT / Revenue | Operating profitability |
+| EBITDA Margin | Margins (%) | EBITDA / Revenue | Operating cash profitability |
+| Net Margin | Margins (%) | Net Income / Revenue | Overall profitability |
+| ROE | Returns (%) | Net Income / Equity | Return generated for shareholders |
+| ROA | Returns (%) | Net Income / Total Assets | Efficiency in using assets |
+| ROCE / ROI | Returns (%) | EBIT / (Total Assets − Current Liabilities) | Return on capital employed |
+| Current Ratio | Liquidity | Current Assets / Current Liabilities | Ability to meet short-term obligations |
+| Quick Ratio | Liquidity | (Current Assets − Inventory) / Current Liabilities | Short-term liquidity excluding inventory |
+| Debt/Equity | Financial structure | Total Debt / Equity | Financial leverage |
+| Net Debt | Financial structure | Total Debt − Cash | Real debt burden |
+| Interest Coverage | Financial structure | EBIT / Interest Expense | Ability to pay interest |
 ---
 
 ## Usage
@@ -162,3 +156,10 @@ Features:
 - [ ] Narrative PDF report export
 - [ ] Interactive dashboard with Streamlit
 - [ ] Quarterly data support (in addition to annual)
+
+---
+
+## Author
+Developed by **[Salvatore Spagnuolo](https://github.com/SasySpanish)**  
+
+---

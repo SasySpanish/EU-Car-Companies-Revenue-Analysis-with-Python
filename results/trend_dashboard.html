@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automotive Europe — Trend Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f4f8;
+    color: #1a1a2e;
+  }
+  header {
+    background: linear-gradient(135deg, #03045e, #0077b6);
+    color: white;
+    padding: 28px 40px 20px;
+  }
+  header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: 0.5px; }
+  header p  { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+  .controls {
+    display: flex; align-items: center; gap: 16px;
+    background: white; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    flex-wrap: wrap;
+  }
+  .controls label { font-weight: 600; font-size: 0.9rem; color: #03045e; }
+  select {
+    padding: 8px 14px; border-radius: 6px;
+    border: 1.5px solid #0077b6; font-size: 0.95rem;
+    color: #03045e; background: #f8fbff; cursor: pointer;
+    min-width: 220px;
+  }
+  select:focus { outline: none; border-color: #023e8a; }
+  .chart-card {
+    background: white; border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 20px; margin-bottom: 20px;
+  }
+  #plotly-chart { width: 100%; height: 480px; }
+  .threshold-box {
+    background: #f8fbff; border-left: 4px solid #0077b6;
+    border-radius: 6px; padding: 14px 18px;
+    margin-bottom: 20px; font-size: 0.88rem; line-height: 1.6;
+  }
+  .threshold-box h3 {
+    font-size: 0.95rem; color: #03045e;
+    margin-bottom: 6px; font-weight: 700;
+  }
+  .threshold-box .badges {
+    display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+  }
+  .badge-fixed  { background: #fde8ea; color: #c0392b; }
+  .badge-median { background: #fef3e2; color: #d35400; }
+  .badge-none   { background: #e8f4fd; color: #0077b6; }
+  .status-table {
+    width: 100%; border-collapse: collapse; font-size: 0.87rem;
+    margin-top: 16px;
+  }
+  .status-table th {
+    background: #03045e; color: white;
+    padding: 8px 12px; text-align: left; font-weight: 600;
+  }
+  .status-table td { padding: 7px 12px; border-bottom: 1px solid #e8eef5; }
+  .status-table tr:last-child td { border-bottom: none; }
+  .ok   { color: #1a7a4a; font-weight: 600; }
+  .warn { color: #c0392b; font-weight: 600; }
+  .na   { color: #aaa; }
+  footer {
+    text-align: center; font-size: 0.78rem; color: #888;
+    padding: 20px; margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚗 Automotive Europe — Trend Dashboard</h1>
+  <p>VW Group · Stellantis · Mercedes-Benz · BMW · Renault · Porsche AG · Volvo Cars · TRATON · Iveco</p>
+</header>
+
+<div class="container">
+
+  <div class="controls">
+    <label for="indicator-select">Indicatore:</label>
+    <select id="indicator-select" onchange="updateChart()">
+    </select>
+  </div>
+
+  <div class="chart-card">
+    <div id="plotly-chart"></div>
+  </div>
+
+  <div class="threshold-box" id="threshold-box"></div>
+
+  <div class="chart-card">
+    <table class="status-table" id="status-table">
+      <thead>
+        <tr>
+          <th>Azienda</th>
+          <th>Ultimo anno</th>
+          <th>Soglia fissa</th>
+          <th>vs Mediana gruppo</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody id="status-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  Dati: Yahoo Finance via yfinance · Solo uso educativo/personale
+</footer>
+
+<script>
+const DATA       = {"Revenue (M)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [250199.0, 279050.0, 322284.0, 324655.0, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 179592.0, 189544.0, 156878.0, 153508.0], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [133893.0, 150017.0, 152390.0, 145594.0, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [111239.0, 142610.0, 155498.0, 142380.0, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 46328.0, 52376.0, 56232.0, 57922.0], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [33138.0, 37636.0, 40529.0, 40082.0, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 330145.0, 399343.0, 400234.0, 357263.0], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 41140.0, 37535.0, 35041.0, 32837.0], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [12651.0, 14357.0, 15978.0, 15289.0, null], "color": "#caf0f8"}], "median": 105715.0, "fixed": null, "direction": null, "label": null, "note": null}, "EBIT (M)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [16285.0, 18488.0, 25699.0, 21664.0, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 21084.0, 22984.0, 5435.0, -22231.0], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [14976.0, 17884.0, 17522.0, 12301.0, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [13454.0, 14209.0, 18476.0, 11394.0, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 2638.0, 4117.0, 4263.0, 3632.0], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [5242.0, 6569.0, 7142.0, 5506.0, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 17089.0, 26939.0, 27040.0, -351.0], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 1196.0, -1747.0, -1426.0, -688.0], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [464.0, 559.0, 1076.0, 1035.0, null], "color": "#caf0f8"}], "median": -519.5, "fixed": null, "direction": null, "label": null, "note": null}, "EBITDA (M)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [43621.0, 46973.0, 53265.0, 53010.0, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 27881.0, 30533.0, 12661.0, -15250.0], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [21956.0, 24405.0, 24185.0, 19073.0, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [19949.0, 22775.0, 27450.0, 20044.0, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 6170.0, 7305.0, 7446.0, 7871.0], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [8456.0, 9758.0, 10670.0, 9594.0, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 33180.0, 44388.0, 49770.0, 23594.0], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 2617.0, 1374.0, 525.0, 732.0], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [1031.0, 1119.0, 1670.0, 1713.0, null], "color": "#caf0f8"}], "median": 4301.5, "fixed": null, "direction": null, "label": null, "note": null}, "Net Income (M)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [15382.0, 15457.0, 16532.0, 11351.0, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 16799.0, 18596.0, 5473.0, -22368.0], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [23006.0, 14501.0, 14261.0, 10207.0, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [12382.0, 17941.0, 11290.0, 7290.0, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, -354.0, 2198.0, 752.0, -10931.0], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [4032.0, 4960.0, 5157.0, 3592.0, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 15577.0, 13053.0, 15401.0, 174.0], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 1136.0, -2072.0, -1506.0, 465.0], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [52.0, 147.0, 218.0, 349.0, null], "color": "#caf0f8"}], "median": -5378.5, "fixed": null, "direction": null, "label": null, "note": null}, "EBIT Margin (%)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [6.51, 6.63, 7.97, 6.67, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 11.74, 12.13, 3.46, -14.48], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [11.19, 11.92, 11.5, 8.45, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [12.09, 9.96, 11.88, 8.0, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 5.69, 7.86, 7.58, 6.27], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [15.82, 17.45, 17.62, 13.74, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 5.18, 6.75, 6.76, -0.1], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 2.91, -4.65, -4.07, -2.1], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [3.67, 3.89, 6.73, 6.77, null], "color": "#caf0f8"}], "median": -1.1, "fixed": 5.0, "direction": "above_good", "label": "Soglia min. 5%", "note": "Nel settore automotive un EBIT Margin superiore al 5% è considerato la soglia minima di salute operativa. Sotto questa soglia il core business fatica a generare redditività sufficiente a coprire capex e oneri finanziari tipici del settore."}, "EBITDA Margin (%)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [17.43, 16.83, 16.53, 16.33, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 15.52, 16.11, 8.07, -9.93], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [16.4, 16.27, 15.87, 13.1, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [17.93, 15.97, 17.65, 14.08, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 13.32, 13.95, 13.24, 13.59], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [25.52, 25.93, 26.33, 23.94, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 10.05, 11.12, 12.44, 6.6], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 6.36, 3.66, 1.5, 2.23], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [8.15, 7.79, 10.45, 11.2, null], "color": "#caf0f8"}], "median": 4.42, "fixed": null, "direction": null, "label": null, "note": null}, "Net Margin (%)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [6.15, 5.54, 5.13, 3.5, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 9.35, 9.81, 3.49, -14.57], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [17.18, 9.67, 9.36, 7.01, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [11.13, 12.58, 7.26, 5.12, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, -0.76, 4.2, 1.34, -18.87], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [12.17, 13.18, 12.72, 8.96, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 4.72, 3.27, 3.85, 0.05], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 2.76, -5.52, -4.3, 1.42], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [0.41, 1.02, 1.36, 2.28, null], "color": "#caf0f8"}], "median": -7.26, "fixed": 3.0, "direction": "above_good", "label": "Soglia min. 3%", "note": "Nel settore automotive i margini netti sono strutturalmente compressi. Una soglia del 3% rappresenta il livello minimo al di sopra del quale si considera che l'azienda stia generando profitto netto in modo sostenibile dopo tasse e oneri finanziari."}, "ROE (%)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [10.65, 9.35, 9.45, 6.23, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 23.33, 22.76, 6.7, -41.77], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [31.97, 16.98, 15.54, 11.02, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [16.65, 20.59, 12.6, 7.9, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, -1.22, 7.39, 2.48, -52.58], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [17.59, 29.13, 23.8, 15.59, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 13.67, 10.33, 11.2, 0.12], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 8.0, -17.5, -15.72, 4.76], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [2.27, 6.24, 9.26, 12.93, null], "color": "#caf0f8"}], "median": -20.83, "fixed": 10.0, "direction": "above_good", "label": "Soglia min. 10%", "note": "Un ROE del 10% è comunemente usato come benchmark minimo per remunerare adeguatamente il capitale proprio degli azionisti. Valori inferiori indicano che l'azienda non genera valore per chi ha investito nel capitale."}, "ROA (%)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [2.91, 2.74, 2.75, 1.79, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 9.02, 9.2, 2.64, -11.46], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [8.85, 5.58, 5.42, 3.85, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [5.39, 7.27, 4.5, 2.72, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, -0.3, 1.8, 0.58, -9.03], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [7.85, 10.41, 10.22, 6.71, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 4.71, 3.66, 3.97, 0.05], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 3.1, -6.36, -5.13, 1.61], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [0.31, 0.92, 1.19, 1.8, null], "color": "#caf0f8"}], "median": -4.49, "fixed": null, "direction": null, "label": null, "note": null}, "ROI / ROCE (%)": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [4.47, 4.85, 6.51, 5.21, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 17.67, 17.93, 4.1, -19.1], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [8.7, 10.42, 9.75, 6.47, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [8.79, 8.74, 11.27, 6.33, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 5.83, 9.36, 9.96, 11.16], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [13.69, 21.15, 19.37, 14.05, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 9.41, 13.79, 12.37, -0.16], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 4.96, -8.66, -8.16, -3.98], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [5.69, 10.24, 13.53, 11.28, null], "color": "#caf0f8"}], "median": -2.07, "fixed": 8.0, "direction": "above_good", "label": "Soglia min. 8%", "note": "Il ROCE (Return on Capital Employed) dovrebbe superare il costo medio del capitale (WACC), stimato intorno al 7-9% per un OEM automobilistico europeo. Sotto l'8% l'azienda distrugge valore economico rispetto al capitale investito."}, "Debt/Equity": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.27, 1.08, 1.11, 1.08, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 0.38, 0.36, 0.46, 0.86], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.3, 0.99, 0.96, 1.0, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.13, 0.82, 0.8, 0.93, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 2.17, 2.19, 2.32, 3.32], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [0.42, 0.56, 0.48, 0.49, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 0.3, 0.28, 0.27, 0.25], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 0.28, 0.26, 0.15, 0.09], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [2.53, 1.88, 2.6, 2.34, null], "color": "#caf0f8"}], "median": 0.55, "fixed": 2.0, "direction": "below_good", "label": "Soglia max. 2x", "note": "Un rapporto Debt/Equity superiore a 2 segnala una leva finanziaria elevata. Nel settore automotive, dove i cicli di investimento sono pesanti, valori oltre questa soglia aumentano significativamente il rischio di insolvenza in fasi di contrazione dei ricavi."}, "Current Ratio": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.22, 1.23, 1.16, 1.13, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 1.27, 1.24, 1.09, 1.02], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.17, 1.16, 1.25, 1.36, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.13, 1.09, 1.09, 1.1, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 1.12, 1.11, 1.05, 1.03], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.42, 1.22, 1.48, 1.41, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 1.07, 0.97, 0.94, 1.04], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 2.03, 1.88, 1.76, 1.69], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [1.3, 0.99, 1.19, 1.28, null], "color": "#caf0f8"}], "median": 1.03, "fixed": 1.0, "direction": "above_good", "label": "Soglia min. 1x", "note": "Un Current Ratio inferiore a 1 significa che le passività a breve termine superano le attività correnti: l'azienda potrebbe non essere in grado di far fronte agli impegni finanziari nel breve periodo senza ricorrere a nuovi finanziamenti."}, "Interest Coverage": {"companies": [{"name": "VW Group", "full": "Volkswagen Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [8.15, 11.25, 7.06, 6.29, null], "color": "#03045e"}, {"name": "Stellantis", "full": "Stellantis", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 17.79, 17.28, 3.57, -15.06], "color": "#023e8a"}, {"name": "Mercedes", "full": "Mercedes-Benz", "x": [2021, 2022, 2023, 2024, 2025], "y": [34.91, 41.88, 25.36, 20.99, null], "color": "#0077b6"}, {"name": "BMW", "full": "BMW Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [57.01, 61.78, 28.16, 19.88, null], "color": "#0096c7"}, {"name": "Renault", "full": "Renault Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 7.13, 11.19, 11.25, 9.19], "color": "#00b4d8"}, {"name": "Porsche", "full": "Porsche AG", "x": [2021, 2022, 2023, 2024, 2025], "y": [44.8, 62.56, 38.82, 24.69, null], "color": "#48cae4"}, {"name": "Volvo Cars", "full": "Volvo Cars", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 15.94, 24.05, 23.23, -0.28], "color": "#90e0ef"}, {"name": "TRATON", "full": "TRATON Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [null, 6.68, -6.07, -5.19, -3.26], "color": "#ade8f4"}, {"name": "Iveco", "full": "Iveco Group", "x": [2021, 2022, 2023, 2024, 2025], "y": [5.16, 3.25, 3.99, 4.39, null], "color": "#caf0f8"}], "median": -1.77, "fixed": null, "direction": null, "label": null, "note": null}};
+const INDICATORS = ["Revenue (M)", "EBIT (M)", "EBITDA (M)", "Net Income (M)", "EBIT Margin (%)", "EBITDA Margin (%)", "Net Margin (%)", "ROE (%)", "ROA (%)", "ROI / ROCE (%)", "Debt/Equity", "Current Ratio", "Interest Coverage"];
+const COMPANIES  = ["VW Group", "Stellantis", "Mercedes", "BMW", "Renault", "Porsche", "Volvo Cars", "TRATON", "Iveco"];
+
+// Popola il dropdown
+const sel = document.getElementById('indicator-select');
+INDICATORS.forEach(ind => {
+  const opt = document.createElement('option');
+  opt.value = ind;
+  opt.textContent = ind;
+  sel.appendChild(opt);
+});
+
+function updateChart() {
+  const indicator = sel.value;
+  const entry     = DATA[indicator];
+  if (!entry) return;
+
+  const traces = [];
+
+  // Trace per ogni azienda
+  entry.companies.forEach(co => {
+    traces.push({
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: co.name,
+      x: co.x,
+      y: co.y,
+      line:   { color: co.color, width: 2.5 },
+      marker: { color: co.color, size: 7 },
+      connectgaps: false,
+      hovertemplate: '<b>' + co.name + '</b><br>Anno: %{x}<br>Valore: %{y:.2f}<extra></extra>',
+    });
+  });
+
+  // Linea soglia fissa
+  if (entry.fixed !== null) {
+    const xMin = Math.min(...entry.companies.flatMap(c => c.x));
+    const xMax = Math.max(...entry.companies.flatMap(c => c.x));
+    traces.push({
+      type: 'scatter', mode: 'lines',
+      name: entry.label || 'Soglia fissa',
+      x: [xMin, xMax],
+      y: [entry.fixed, entry.fixed],
+      line: { color: '#e63946', width: 2, dash: 'dash' },
+      hovertemplate: 'Soglia fissa: ' + entry.fixed + '<extra></extra>',
+    });
+  }
+
+  // Linea mediana gruppo (tratteggiata arancione)
+  {
+    const xMin = Math.min(...entry.companies.flatMap(c => c.x));
+    const xMax = Math.max(...entry.companies.flatMap(c => c.x));
+    traces.push({
+      type: 'scatter', mode: 'lines',
+      name: 'Mediana gruppo: ' + entry.median,
+      x: [xMin, xMax],
+      y: [entry.median, entry.median],
+      line: { color: '#f4a261', width: 1.8, dash: 'dot' },
+      hovertemplate: 'Mediana: ' + entry.median + '<extra></extra>',
+    });
+  }
+
+  const layout = {
+    margin: { t: 40, r: 20, b: 60, l: 60 },
+    xaxis: {
+      title: 'Anno',
+      tickmode: 'array',
+      tickvals: [...new Set(entry.companies.flatMap(c => c.x))].sort(),
+      tickformat: 'd',
+      gridcolor: '#e8eef5',
+    },
+    yaxis: {
+      title: indicator,
+      gridcolor: '#e8eef5',
+      zeroline: true,
+      zerolinecolor: '#ccc',
+    },
+    legend: {
+      orientation: 'h', x: 0, y: -0.22,
+      font: { size: 11 },
+    },
+    plot_bgcolor:  'white',
+    paper_bgcolor: 'white',
+    hovermode: 'x unified',
+    font: { family: 'Segoe UI, Arial', size: 12 },
+  };
+
+  Plotly.newPlot('plotly-chart', traces, layout, {
+    responsive: true, displayModeBar: true,
+    modeBarButtonsToRemove: ['lasso2d','select2d'],
+  });
+
+  updateThresholdBox(entry, indicator);
+  updateStatusTable(entry, indicator);
+}
+
+function updateThresholdBox(entry, indicator) {
+  const box = document.getElementById('threshold-box');
+  let html = `<h3>📊 ${indicator}</h3><div class="badges">`;
+
+  if (entry.fixed !== null) {
+    const dir = entry.direction === 'above_good'
+      ? '≥ ' + entry.fixed + ' = positivo'
+      : '≤ ' + entry.fixed + ' = positivo';
+    html += `<span class="badge badge-fixed">Soglia fissa: ${entry.fixed} (${dir})</span>`;
+  } else {
+    html += `<span class="badge badge-none">Nessuna soglia fissa per questo indicatore</span>`;
+  }
+
+  html += `<span class="badge badge-median">Mediana gruppo: ${entry.median}</span>`;
+  html += `</div>`;
+
+  if (entry.note) {
+    html += `<p>${entry.note}</p>`;
+  }
+
+  box.innerHTML = html;
+}
+
+function updateStatusTable(entry, indicator) {
+  const tbody = document.getElementById('status-tbody');
+  tbody.innerHTML = '';
+
+  // Prendi l'ultimo anno per ogni azienda
+  entry.companies.forEach(co => {
+    const validPairs = co.x.map((yr, i) => [yr, co.y[i]])
+                           .filter(p => p[1] !== null && p[1] !== undefined);
+    if (!validPairs.length) return;
+
+    validPairs.sort((a,b) => b[0] - a[0]);
+    const [lastYear, lastVal] = validPairs[0];
+
+    // Stato vs soglia fissa
+    let statoFixed = '<span class="na">N/A</span>';
+    let isOk = null;
+    if (entry.fixed !== null) {
+      if (entry.direction === 'above_good') {
+        isOk = lastVal >= entry.fixed;
+      } else {
+        isOk = lastVal <= entry.fixed;
+      }
+      const op = entry.direction === 'above_good'
+        ? (lastVal >= entry.fixed ? '≥' : '<')
+        : (lastVal <= entry.fixed ? '≤' : '>');
+      statoFixed = `${lastVal.toFixed(2)} ${op} ${entry.fixed}`;
+    }
+
+    // Stato vs mediana
+    const vsMedian = lastVal - entry.median;
+    const vsMedianStr = (vsMedian >= 0 ? '+' : '') + vsMedian.toFixed(2);
+
+    // Icona stato
+    let statoIcon = '<span class="na">—</span>';
+    if (isOk === true)  statoIcon = '<span class="ok">✅ OK</span>';
+    if (isOk === false) statoIcon = '<span class="warn">⚠️ Attenzione</span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${co.name}</b></td>
+      <td>${lastVal.toFixed(2)} <small style="color:#888">(${lastYear})</small></td>
+      <td>${statoFixed}</td>
+      <td>${vsMedianStr}</td>
+      <td>${statoIcon}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Inizializza con il primo indicatore
+updateChart();
+</script>
+</body>
+</html>
